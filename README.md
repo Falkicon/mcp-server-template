@@ -251,7 +251,7 @@ MCP is a very new protocol and is still in active development. There are some kn
 - **AI Model Compatibility:** The ability for the Cursor AI agent to automatically use or be prompted to use custom MCP tools can be **model-dependent**. Some models may have difficulty initiating calls to dynamically discovered tools even if they are listed correctly in the settings. Testing with different AI models within Cursor may be necessary if you encounter issues with AI tool invocation.
 - **Tool Quantity:** Some MCP servers, or user's with many MCP servers active, may have many tools available for Cursor to use. Currently, Cursor will only send the first 40 tools to the Agent.
 - **Remote Development:** Cursor directly communicates with MCP servers from your local machine, either directly through `stdio` or via the network using `sse`. Therefore, MCP servers may not work properly when accessing Cursor over SSH or other development environments. We are hoping to improve this in future releases.
-- **MCP Resources:** MCP servers offer two main capabilities: tools and resources. Tools are available in Cursor today, and allow Cursor to execute the tools offered by an MCP server, and use the output in it's further steps. However, resources are not yet supported in Cursor. We are hoping to add resource support in future releases.
+- **MCP Features Support:** MCP servers offer three main capabilities: tools, resources, and prompts. Currently, Cursor only supports tools. Resources and prompts are defined in the protocol and implemented in this server, but are not yet accessible through Cursor. We are hoping to see support for these additional capabilities in future Cursor releases.
 
 ## License
 
