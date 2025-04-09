@@ -1,0 +1,34 @@
+# Git files
+.git
+.gitignore
+
+# Node dependencies
+node_modules
+
+# Build artifacts
+dist
+coverage
+
+# TS Config (already used in build stage)
+ttsconfig.json
+*.tsbuildinfo
+
+# Development tooling config
+.eslintrc.cjs
+.prettierrc.json
+.prettierignore
+vitest.config.ts
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 

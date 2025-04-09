@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    /* Base Options */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+
+    /* If NOT transpiling with TypeScript: */
+    // "moduleResolution": "Bundler",
+    // "module": "ESNext",
+    // "noEmit": true,
+
+    /* If your code runs in the DOM: */
+    // "lib": ["es2022", "dom", "dom.iterable"],
+
+    /* If your code DOES NOT run in the DOM: */
+    "lib": ["es2022"],
+
+    /* If you are using bun */
+    // "moduleResolution": "node",
+    // "module": "commonjs",
+    // "types": ["bun"],
+
+    /* If you are using node */
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+
+    /* If you are building a library */
+    // "declaration": true,
+
+    /* If you are building a CLI */
+    // "bin": "./dist/cli.js",
+
+    /* Output */
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

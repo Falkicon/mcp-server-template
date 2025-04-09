@@ -1,0 +1,55 @@
+---
+description: General coding standards and language-specific guidelines.
+globs: 
+alwaysApply: false
+---
+# Coding Standards
+
+## General
+- Follow standard conventions for the language being used (e.g., PEP 8 for Python, standard JavaScript style guides).
+- Prioritize code clarity and readability. Use meaningful variable and function names.
+- Keep functions and methods concise and focused on a single responsibility.
+- Add comments only for complex logic or non-obvious sections; avoid commenting obvious code.
+
+## Language Specific (Examples - Expand as needed)
+
+### Python
+- Linter: Use Flake8 / Ruff with standard configurations.
+- Formatter: Use Black / Ruff formatter.
+- Type Hinting: Use standard type hints for function signatures and complex variables.
+
+### JavaScript/TypeScript
+- Linter: Use ESLint with [Specify Configuration, e.g., Airbnb, StandardJS].
+- Formatter: Use Prettier with default settings.
+- Use `const` by default; use `let` only when reassignment is necessary.
+- Prefer modern JavaScript features (arrow functions, template literals, async/await).
+- TypeScript: Leverage strong typing; avoid `any` where possible.
+
+### HTML/CSS
+- Use semantic HTML5 elements.
+- Follow BEM (Block, Element, Modifier) or a similar methodology for CSS class naming.
+- Keep CSS selectors specific but avoid excessive nesting.
+
+## Performance
+- Be mindful of algorithmic complexity (Big O notation).
+- Avoid unnecessary computations within loops.
+- Profile performance-critical sections when necessary.
+
+## Error Handling
+- Implement robust error handling (e.g., try-catch blocks, proper error propagation).
+- Provide informative error messages.
+
+## Dependency Management
+- Verify the necessity of new dependencies before adding them. Check for existing functionality.
+- When requested, assist in analyzing project metadata files (e.g., `package.json`, `requirements.txt`) for context.
+- Document significant dependency changes.
+
+## Code Formatting & Cleanup
+- Apply configured code formatters (e.g., Black, Prettier) consistently.
+- Utilize linters (e.g., Ruff, Flake8, ESLint) to identify potential issues.
+- When requested, assist in generating commands or performing actions to remove unused code, imports, or files (requires human verification before execution).
+
+## Security
+- Sanitize user inputs.
+- Avoid exposing sensitive information in logs or error messages.
+- Follow standard security practices for the framework/platform being used. 

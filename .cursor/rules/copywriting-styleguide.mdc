@@ -1,0 +1,22 @@
+---
+description: Writing style gidelines and references for writing markdown content
+globs: 
+alwaysApply: false
+---
+# Writing style guide
+## Style guides
+- Use the Microsoft Writing Style Guide as the primary style guide for all written content in markdown files.
+    - https://learn.microsoft.com/en-us/style-guide/welcome/
+- Use the The Elements of Style, Fourth Edition to provide guidance where the Microsoft Writing Style Guide does not offer specific guidance.
+
+Writing voice = Business casual
+
+## Formatting
+Title case = Sentence case
+
+## Key Content Principles
+- **Clarity & Conciseness:** Use clear, concise language suitable for a business casual voice. Choose words carefully for precision. Write effectively for various contexts, including responsive interfaces.
+- **Consistency:** Maintain consistency in formatting, capitalization (Sentence case), number representation, punctuation, and acronym usage, following the primary style guides. Define acronyms clearly on first use.
+- **Accuracy:** Ensure grammatical correctness and proper punctuation.
+- **Procedural Clarity:** Structure instructions and procedures logically for easy understanding.
+

@@ -1,0 +1,36 @@
+---
+description: Guidelines for using the [Your Design System Name] design system.
+globs: 
+alwaysApply: false
+---
+# Design System Guidelines
+
+## Overview
+- This document outlines the usage of the [Your Design System Name] design system.
+- The goal is to ensure consistency, accessibility, and efficiency in UI development.
+- Always refer to the canonical design system documentation/library for the most up-to-date components and patterns. [Link to Design System Documentation/Library if available]
+
+## Core Principles
+- **Consistency:** Use established components and patterns uniformly across the product.
+- **Reusability:** Leverage existing components instead of creating custom solutions for common UI needs.
+- **Accessibility:** Ensure implementations adhere to accessibility standards defined in `accessibility-standards` rule.
+- **Efficiency:** Utilize the design system to accelerate the design and development process.
+
+## Usage
+
+### Components
+- Use components directly from the established library ([Specify Library, e.g., Figma library, React component library]).
+- Do not modify core component styles or behaviors unless contributing back to the system via the established process.
+- Use components according to their documented API and intended use cases.
+
+### Tokens & Styles
+- **Colors:** Use predefined color tokens for UI elements, text, backgrounds, borders, etc. Do not use hardcoded hex values.
+- **Typography:** Apply predefined text styles (font family, size, weight, line height) for headings, body text, labels, etc.
+- **Spacing & Layout:** Use defined spacing units/tokens for margins, padding, and layout grids.
+- **Iconography:** Utilize icons from the approved icon set/library.
+
+### Patterns
+- Follow established patterns for common interactions and layouts (e.g., forms, navigation, data display, feedback messages).
+
+## Contribution
+- [Outline the process for proposing new components, patterns, or changes to the design system, if applicable]. 
