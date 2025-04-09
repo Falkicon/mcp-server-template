@@ -297,4 +297,8 @@ async function startServer() {
 }
 
 // Start the server
-startServer();
+// Only start the server automatically if not in a test environment
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST;
+if (!isTestEnv) {
+  startServer();
+}
