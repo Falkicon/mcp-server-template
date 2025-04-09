@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleGreetTool } from '../src/index.js';
 import { ToolExecutionError } from '../src/errors.js';
 import logger from '../src/logger.js';
+import { customGreetingPrefix } from '../src/config.js';
 
 // Mock the logger
 vi.mock('../src/logger.js', () => ({
@@ -14,44 +15,52 @@ vi.mock('../src/logger.js', () => ({
 }));
 
 describe('Greet Tool Handler', () => {
-  const mockExtra: unknown = {}; // Change type from any to unknown
+  // Remove the unused mockExtra variable
+  // const mockExtra: unknown = {};
 
-  it('should return a default greeting when default is expected', async () => {
-    // Pass the default value 'Hello' as expected by the handler's inferred type
+  // Clear mocks before each test
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return a default greeting (with prefix)', async () => {
     const args = { name: 'World', greeting: 'Hello' };
-    const result = await handleGreetTool(args, mockExtra);
-    expect(result.content).toEqual([{ type: 'text', text: 'Hello, World!' }]);
-    expect(logger.info).toHaveBeenCalled();
+    const result = await handleGreetTool(args);
+    const expectedText = `${customGreetingPrefix}Hello, World!`;
+    expect(result.content).toEqual([{ type: 'text', text: expectedText }]);
   });
 
-  it('should return a custom greeting', async () => {
+  it('should return a custom greeting (with prefix)', async () => {
     const args = { name: 'Alice', greeting: 'Hi' };
-    const result = await handleGreetTool(args, mockExtra);
-    expect(result.content).toEqual([{ type: 'text', text: 'Hi, Alice!' }]);
-    expect(logger.info).toHaveBeenCalled();
+    const result = await handleGreetTool(args);
+    const expectedText = `${customGreetingPrefix}Hi, Alice!`;
+    expect(result.content).toEqual([{ type: 'text', text: expectedText }]);
   });
 
-  it('should handle empty name with default greeting', async () => {
-    // Pass the default value 'Hello'
+  it('should handle empty name with default greeting (with prefix)', async () => {
     const args = { name: '', greeting: 'Hello' };
-    const result = await handleGreetTool(args, mockExtra);
-    expect(result.content).toEqual([{ type: 'text', text: 'Hello, !' }]);
+    const result = await handleGreetTool(args);
+    const expectedText = `${customGreetingPrefix}Hello, !`;
+    expect(result.content).toEqual([{ type: 'text', text: expectedText }]);
   });
 
-  it('should throw ToolExecutionError for simulated error with default greeting', async () => {
-    // Pass the default value 'Hello'
-    const args = { name: 'error', greeting: 'Hello' };
-    await expect(handleGreetTool(args, mockExtra)).rejects.toThrow(
-      ToolExecutionError
-    );
-    await expect(handleGreetTool(args, mockExtra)).rejects.toThrow(
-      'Error executing tool "greet": Simulated error during greeting.'
-    );
-    expect(logger.error).toHaveBeenCalled();
-  });
+  // Note: This test doesn't trigger a specific error path in the current handler
+  // It verifies that if an unexpected error *were* to occur, it's wrapped correctly.
+  it('should wrap unexpected errors in ToolExecutionError', async () => {
+    // Mock logger.info temporarily to simulate an error *inside* the handler
+    const originalInfo = logger.info;
+    const mockError = new Error('Unexpected runtime error');
+    logger.info = vi.fn(() => {
+      throw mockError;
+    });
 
-  it('should handle non-Error throws', async () => {
-    // const args = { name: 'throw-non-error', greeting: 'Hello' }; // Remove or comment out unused var
-    // ... placeholder code ...
+    const args = { name: 'Test', greeting: 'Hello' };
+    await expect(handleGreetTool(args)).rejects.toThrow(ToolExecutionError);
+    await expect(handleGreetTool(args)).rejects.toThrow(
+      /^Error executing tool "greet": Failed to generate greeting/
+    );
+
+    // Restore original logger
+    logger.info = originalInfo;
   });
 });

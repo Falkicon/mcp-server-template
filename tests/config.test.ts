@@ -18,7 +18,6 @@ interface ConfigModule {
 }
 
 describe('Configuration Loading', () => {
-
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();

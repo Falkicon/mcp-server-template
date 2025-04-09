@@ -42,5 +42,11 @@ export const serverPort = port;
 // Add other configuration variables here as needed
 export const logLevel = process.env.LOG_LEVEL || 'info'; // Export log level used by logger
 
+// Custom greeting prefix (optional)
+export const customGreetingPrefix = process.env.CUSTOM_GREETING_PREFIX || ''; // Default to empty string if not set
+
 // Log loaded config using the logger
-logger.info({ transportType, serverPort, logLevel }, 'Configuration loaded'); // Use logger
+logger.info(
+  { transportType, serverPort, logLevel, customGreetingPrefix },
+  'Configuration loaded'
+); // Use logger

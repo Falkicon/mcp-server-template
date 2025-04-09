@@ -1,30 +1,119 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { fileURLToPath } from 'node:url';
-import express, { type Request, type Response } from 'express';
 import { z } from 'zod';
-import { transportType, serverPort } from './config.js'; // Import config
-import logger from './logger.js'; // Import logger
-import { ToolExecutionError } from './errors.js'; // Import custom error
+import logger from './logger.js'; // Import the configured logger
+import { customGreetingPrefix } from './config.js'; // Import custom prefix
+import { ToolExecutionError, AppError } from './errors.js'; // Import custom error and AppError
 
-// --- Configuration removed - now handled in config.ts ---
-// const transportType = process.env.MCP_TRANSPORT?.toLowerCase() || 'stdio';
-// const port = parseInt(process.env.MCP_PORT || '3001', 10);
-// ------------------------------------------------------
+/**
+ * MCP Server Template
+ *
+ * This is a minimal but complete MCP server implementation meant to serve as a
+ * starting point for building your own MCP servers.
+ *
+ * It demonstrates:
+ * - Basic server setup
+ * - Tool implementation
+ * - Resource handling
+ * - Prompt creation
+ * - Error handling
+ *
+ * IMPORTANT NOTES:
+ * 1. All debugging logs MUST be written to stderr, not stdout
+ * 2. In stdio mode, stdout is strictly reserved for JSON-RPC messages
+ * 3. Tool names are automatically prefixed by Cursor (e.g., 'add' becomes 'mcp_mcp_minimal_add')
+ * 4. The AI assistant can call tools directly using the prefixed name format
+ */
 
-// Basic server setup
+// Create the server with basic configuration
 const server = new McpServer({
-  name: 'MCP Boilerplate Server',
-  // Consider loading version from package.json dynamically
+  name: 'MCP Template Server',
   version: '1.0.0',
-  // Optional: Add capabilities if needed
-  // capabilities: { }
+  capabilities: {
+    tools: true,
+    resources: true,
+    prompts: true,
+  },
 });
 
-// --- Primitives (Tasks T08, T09, T10) ---
+// Use the central logger configured in logger.ts
+const log = logger;
 
-// --- Tool: Greet ---
+// Safe logging function that writes to stderr to avoid interfering with stdio protocol
+// CRITICAL: Never use console.log() as it writes to stdout and breaks the JSON-RPC protocol
+// const log = {
+//   info: (message: string) => process.stderr.write(`[INFO] ${message}\n`),
+//   error: (message: string, error?: unknown) => {
+//     process.stderr.write(`[ERROR] ${message}\n`);
+//     if (error instanceof Error) {
+//       process.stderr.write(`[ERROR] ${error.message}\n${error.stack}\n`);
+//     }
+//   }
+// };
+
+// ==== TOOLS ====
+
+// 1. Add Tool - Adds two numbers and returns the result
+const AddToolArgsSchema = z.object({
+  number1: z.number().describe('The first number to add.'),
+  number2: z.number().describe('The second number to add.'),
+});
+
+/**
+ * Handler function for the 'add' tool
+ */
+async function handleAddTool({
+  number1,
+  number2,
+}: {
+  number1: number;
+  number2: number;
+}) {
+  const toolName = 'add';
+  try {
+    log.info(`Executing ${toolName} tool with ${number1} and ${number2}`);
+    const sum = number1 + number2;
+
+    // Simulate a potential error for demonstration (e.g., if numbers are too large)
+    if (Math.abs(number1) > 1e15 || Math.abs(number2) > 1e15) {
+      throw new Error('Input numbers are too large for precise calculation.');
+    }
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `The sum of ${number1} and ${number2} is ${sum}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    // Log and re-throw as a specific error
+    const toolError = new ToolExecutionError(
+      toolName,
+      'Failed to calculate sum',
+      error instanceof Error ? error : undefined,
+      { number1, number2 }
+    );
+    log.error({ err: toolError }, toolError.message);
+    throw toolError;
+  }
+}
+
+// Register the tool
+// Note: Cursor automatically creates a prefixed version for AI tool calling
+// (e.g., 'add' becomes 'mcp_mcp_minimal_add' for the AI to call)
+server.tool(
+  'add',
+  'Adds two numbers together and returns the sum',
+  {
+    number1: AddToolArgsSchema.shape.number1,
+    number2: AddToolArgsSchema.shape.number2,
+  },
+  handleAddTool
+);
+
+// 2. Greet Tool - Greets a person
 const GreetToolArgsSchema = z.object({
   name: z.string().describe('The name of the person to greet.'),
   greeting: z
@@ -33,218 +122,179 @@ const GreetToolArgsSchema = z.object({
     .default('Hello')
     .describe('The greeting phrase to use (optional).'),
 });
-type GreetToolArgs = z.infer<typeof GreetToolArgsSchema>;
 
-// Exported handler function for testing
-/* export */ async function handleGreetTool(
-  { name, greeting }: GreetToolArgs,
-  _extra: unknown
-) {
+/**
+ * Handler function for the 'greet' tool
+ */
+export async function handleGreetTool({
+  name,
+  greeting,
+}: {
+  name: string;
+  greeting: string;
+}) {
   const toolName = 'greet';
-  logger.info({ name, greeting, toolName }, `Executing ${toolName} tool`);
   try {
-    if (name.toLowerCase() === 'error') {
-      throw new Error('Simulated error during greeting.');
-    }
-    const message = `${greeting}, ${name}!`;
+    log.info(`Executing ${toolName} tool for ${name}`);
+
+    // Apply the custom prefix if it exists
+    const actualGreeting = customGreetingPrefix
+      ? `${customGreetingPrefix}${greeting}`
+      : greeting;
+
+    const message = `${actualGreeting}, ${name}!`;
+
     return {
-      content: [{ type: 'text', text: message }] as {
-        type: 'text';
-        text: string;
-      }[],
+      content: [
+        {
+          type: 'text' as const,
+          text: message,
+        },
+      ],
     };
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error(
-      { err, name, greeting, toolName },
-      `Error executing ${toolName} tool`
+  } catch (error) {
+    // Log and re-throw as a specific error
+    const toolError = new ToolExecutionError(
+      toolName,
+      'Failed to generate greeting',
+      error instanceof Error ? error : undefined,
+      { name, greeting }
     );
-    throw new ToolExecutionError(toolName, err.message, err, {
-      name,
-      greeting,
-    });
+    log.error({ err: toolError }, toolError.message);
+    throw toolError;
   }
 }
 
+// Register the tool
+// Note: Cursor automatically creates a prefixed version for AI tool calling
+// (e.g., 'greet' becomes 'mcp_mcp_minimal_greet' for the AI to call)
 server.tool(
   'greet',
+  'Greets the specified person',
   {
-    // Argument schema definition
     name: GreetToolArgsSchema.shape.name,
     greeting: GreetToolArgsSchema.shape.greeting,
   },
-  handleGreetTool // Use the handler (now accepts _extra param)
+  handleGreetTool
 );
 
-// --- Resource: Welcome Message ---
-server.resource(
-  'welcome-message',
-  'system://welcome',
-  {
-    // Metadata
-    description: 'Provides a static welcome message.',
-  },
-  async (uri: URL, _extra: unknown) => {
-    logger.info({ uri: uri.href }, `Providing static resource`);
+// ==== RESOURCES ====
+
+/**
+ * Handler function for the welcome message resource
+ */
+async function handleWelcomeResource(uri: URL) {
+  const resourceName = 'welcome';
+  try {
+    log.info(`Accessing welcome resource at ${uri.href}`);
+
     return {
       contents: [
         {
           uri: uri.href,
-          text: 'Welcome to the MCP Boilerplate Server!',
+          text: 'Welcome to the MCP Template Server! This is a static resource example.',
         },
       ],
     };
+  } catch (error) {
+    const resourceError = new AppError(
+      `Error accessing resource "${resourceName}"`,
+      { uri: uri.href, cause: error }
+    );
+    log.error({ err: resourceError }, resourceError.message);
+    throw resourceError;
   }
+}
+
+// Register the resource
+server.resource(
+  'welcome',
+  'system://welcome',
+  {
+    description: 'A welcome message resource',
+  },
+  handleWelcomeResource
 );
 
-// --- Prompt: Summarize Topic ---
-const SummarizePromptArgsSchema = z.object({
-  topic: z.string().describe('The topic to summarize.'),
+// ==== PROMPTS ====
+
+/**
+ * Handler function for a simple summary prompt
+ */
+const SummaryPromptArgsSchema = z.object({
+  topic: z.string().describe('The topic to summarize'),
 });
-type SummarizePromptArgs = z.infer<typeof SummarizePromptArgsSchema>;
 
 server.prompt(
-  'summarize-topic',
+  'summarize',
   {
-    // Argument schema definition
-    topic: SummarizePromptArgsSchema.shape.topic,
+    topic: SummaryPromptArgsSchema.shape.topic,
   },
-  ({ topic }: SummarizePromptArgs, _extra: unknown) => {
-    logger.info({ topic }, `Generating summarize prompt`);
-    return {
-      messages: [
-        {
-          role: 'user',
-          // Correct content structure (single object for single part)
-          content: {
-            type: 'text',
-            text: `Please provide a brief summary of the following topic: ${topic}`,
+  ({ topic }) => {
+    const promptName = 'summarize';
+    try {
+      log.info(`Creating summary prompt for topic: ${topic}`);
+
+      if (!topic || topic.trim().length === 0) {
+        throw new Error('Topic cannot be empty.');
+      }
+
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Please provide a brief summary of the following topic: ${topic}`,
+            },
           },
-        },
-      ],
-    };
+        ],
+      };
+    } catch (error) {
+      const promptError = new AppError(
+        `Error creating prompt "${promptName}"`,
+        { topic, cause: error }
+      );
+      log.error({ err: promptError }, promptError.message);
+      throw promptError;
+    }
   }
-  // Description can be added via Zod .describe() if supported by clients
 );
 
-// --- Transport setup (Tasks T06, T07) ---
+// Start the server using stdio transport
 async function startServer() {
-  logger.info({ transport: transportType }, `Starting MCP server...`);
+  log.info('Starting MCP Template Server...');
 
-  if (transportType === 'stdio') {
-    logger.info('Connecting via stdio...');
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    logger.info('Server connected via stdio.');
-  } else if (transportType === 'http') {
-    logger.info({ port: serverPort }, `Setting up HTTP/SSE server...`);
-    const app = express();
+  // Simple check for stdio flag
+  if (process.argv.includes('--stdio')) {
+    try {
+      log.info('Initializing stdio transport');
+      const transport = new StdioServerTransport();
 
-    // Keep track of active transports by session ID
-    const transports: { [sessionId: string]: SSEServerTransport } = {};
+      // Connect to the transport
+      log.info('Connecting to transport...');
+      await server.connect(transport);
+      log.info('Server started successfully');
 
-    // SSE endpoint for client connections
-    app.get('/sse', async (_req: Request, res: Response) => {
-      logger.info('Client connected via SSE');
-      const messageEndpoint = '/messages'; // Path for client to send messages back
-      const transport = new SSEServerTransport(messageEndpoint, res);
-      transports[transport.sessionId] = transport;
-      const sessionId = transport.sessionId;
-
-      res.on('close', () => {
-        logger.info({ sessionId }, `Client disconnected (SSE session closed)`);
-        delete transports[sessionId];
+      // Error handling
+      process.on('uncaughtException', (error) => {
+        log.error({ err: error }, 'Uncaught exception'); // Log error object with pino
+        process.exit(1);
       });
 
-      try {
-        await server.connect(transport);
-        logger.info({ sessionId }, `Server connected to SSE client`);
-      } catch (error) {
-        logger.error(
-          { err: error, sessionId },
-          'Error connecting McpServer to SSE transport'
-        );
-        if (!res.closed) {
-          res.end();
-        }
-        delete transports[sessionId];
-      }
-    });
-
-    // Endpoint for clients to POST messages back to the server
-    app.post(
-      '/messages',
-      express.raw({ type: 'application/json' }),
-      async (req: Request, res: Response) => {
-        const sessionId = req.query.sessionId as string;
-        const transport = transports[sessionId];
-        if (transport) {
-          logger.debug({ sessionId }, `Received POST message`);
-          try {
-            await transport.handlePostMessage(req, res);
-            logger.debug({ sessionId }, `Successfully processed POST message`);
-          } catch (error) {
-            logger.error(
-              { err: error, sessionId },
-              `Error handling POST message`
-            );
-            if (!res.headersSent) {
-              res.status(500).send('Error processing message');
-            }
-          }
-        } else {
-          logger.warn(
-            { sessionId },
-            `No active transport found for POST message`
-          );
-          res.status(400).send('No transport found for sessionId');
-        }
-      }
-    );
-
-    // Use imported config value for port
-    app.listen(serverPort, () => {
-      logger.info({ port: serverPort }, `MCP Server (HTTP/SSE) listening`);
-      logger.debug(` -> SSE connections: http://localhost:${serverPort}/sse`);
-      logger.debug(
-        ` -> Message posts: http://localhost:${serverPort}/messages?sessionId=<sessionId>`
-      );
-    });
+      process.on('unhandledRejection', (reason) => {
+        log.error({ reason }, 'Unhandled rejection'); // Log reason object with pino
+        process.exit(1);
+      });
+    } catch (error) {
+      log.error({ err: error }, 'Failed to start server'); // Log error object with pino
+      process.exit(1);
+    }
   } else {
-    // This case should ideally not be hit due to validation in config.ts,
-    // but kept as a safeguard.
-    logger.error(`Unsupported transport type: ${transportType}`);
+    log.error('This server only supports stdio transport. Use --stdio flag.');
     process.exit(1);
   }
 }
 
-// Graceful shutdown handler
-const shutdown = async () => {
-  logger.info('Shutting down MCP server...');
-  try {
-    logger.info('Server shutdown initiated (no explicit dispose needed).');
-    process.exit(0);
-  } catch (error) {
-    logger.error({ err: error }, 'Error during server shutdown');
-    process.exit(1);
-  }
-};
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-// Start the server only if this script is run directly
-const __filename = fileURLToPath(import.meta.url);
-if (process.argv[1] === __filename) {
-  startServer().catch((error) => {
-    logger.error({ err: error }, 'Failed to start MCP server');
-    process.exit(1);
-  });
-}
-
-// Export server, startServer, and handlers for testing
-export {
-  server,
-  startServer,
-  handleGreetTool /*, handleWelcomeResource, handleSummarizePrompt */,
-}; // Comment out handlers for now
+// Start the server
+startServer();
